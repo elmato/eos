@@ -38,7 +38,7 @@
 using std::string;
 using std::vector;
 
-namespace bpo = boost::program_options;
+//namespace bpo = boost::program_options;
 
 namespace eos {
 

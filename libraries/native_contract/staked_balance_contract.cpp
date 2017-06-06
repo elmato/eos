@@ -9,7 +9,6 @@
 
 #include <boost/range/algorithm/for_each.hpp>
 #include <boost/range/algorithm/binary_search.hpp>
-
 namespace eos {
 using namespace chain;
 
@@ -23,8 +22,10 @@ void CreateAccount_Notify_Staked::apply(apply_context& context) {
 void TransferToLocked_Notify_Staked::apply(apply_context& context) {
    auto lock = context.msg.as<types::TransferToLocked>();
    const auto& balance = context.db.get<StakedBalanceObject, byOwnerName>(lock.to);
-
-   balance.stakeTokens(lock.amount, context.mutable_db);
+   context.mutable_db.modify(balance, [&lock](StakedBalanceObject& sbo) {
+      sbo.stakedBalance += lock.amount;
+   });
+#warning TODO: Update producer votes
 }
 
 void StartUnlockEos::validate(message_validate_context& context) {
@@ -44,9 +45,16 @@ void StartUnlockEos::validate_preconditions(precondition_validate_context& conte
 
 void StartUnlockEos::apply(apply_context& context) {
    auto unlock = context.msg.as<types::StartUnlockEos>();
-   const auto& balance = context.db.get<StakedBalanceObject, byOwnerName>(unlock.account);
-
-   balance.beginUnstakingTokens(unlock.amount, context.mutable_db);
+   context.mutable_db.modify(context.db.get<StakedBalanceObject, byOwnerName>(unlock.account),
+                             [&unlock, &context](StakedBalanceObject& sbo) {
+      // If there was any asset left unclaimed from a previous unstaking, move it back to staked first
+      sbo.stakedBalance += sbo.unstakingBalance;
+      // OK, now unstakingBalance is logically zero, so we can just overwrite it with its new value
+      sbo.unstakingBalance = unlock.amount;
+      // Deduct the now unstaking balance from the staked balance, and record the time
+      sbo.stakedBalance -= unlock.amount;
+      sbo.lastUnstakingTime = context.db.get(dynamic_global_property_object::id_type()).time;
+   });
 }
 
 void ClaimUnlockedEos::validate(message_validate_context& context) {
@@ -76,6 +84,7 @@ void ClaimUnlockedEos::apply(apply_context& context) {
                              [&claim](StakedBalanceObject& sbo) {
       sbo.unstakingBalance -= claim.amount;
    });
+#warning TODO: Update producer votes
 }
 
 void CreateProducer::validate(message_validate_context& context) {
