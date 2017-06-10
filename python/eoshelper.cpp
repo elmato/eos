@@ -35,6 +35,8 @@
 #include <eos/chain/transaction.hpp>
 #include <eos/chain/block.hpp>
 
+#include <eos/chain/type_object.hpp>
+
 #include <eos/utilities/key_conversion.hpp>
 
 using namespace boost;
@@ -85,7 +87,7 @@ std::string eoshelper_DefineStruct(const std::string& scope, const std::string& 
     
     eos::types::Field field;
     
-    auto t = boost::python::extract<boost::python::tuple>(fields[0])();
+    auto t = boost::python::extract<boost::python::tuple>(fields[i])();
 
     field.name = boost::python::extract<const char*>(t[0])();
     field.type = boost::python::extract<const char*>(t[1])();
