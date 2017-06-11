@@ -53,7 +53,7 @@ std::string eoshelper_Transfer(const std::string& from, const std::string& to, l
 
   transfer.from   = from;
   transfer.to     = to;
-  transfer.amount = amount;
+  transfer.amount = Asset(amount);
   transfer.memo   = memo;
 
   return fc::to_hex(fc::raw::pack(transfer));
