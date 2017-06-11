@@ -2,12 +2,8 @@
 
 #include <eos/producer_plugin/producer_plugin.hpp>
 #include <eos/chain_api_plugin/chain_api_plugin.hpp>
-<<<<<<< 1f06acf08838db94a2bfee2f1e839d05134186b6
 #include <eos/net_plugin/net_plugin.hpp>
-=======
 #include <eos/http_plugin/http_plugin.hpp>
-#include <eos/native_system_contract_plugin/native_system_contract_plugin.hpp>
->>>>>>> Enable chain_api_plugin + native_system_contract_plugin
 
 #include <fc/log/logger_config.hpp>
 #include <fc/exception/exception.hpp>
@@ -30,6 +26,7 @@ int main(int argc, char** argv)
 
       app().startup();
       app().exec();
+
    } catch (const fc::exception& e) {
       elog("${e}", ("e",e.to_detail_string()));
    } catch (const boost::exception& e) {
