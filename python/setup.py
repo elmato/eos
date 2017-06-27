@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import os
-os.environ["CC"] = "g++"
-os.environ["CXX"] = "g++"
-os.environ["LDFLAGS"] = "-Wl,--no-as-needed"
+os.environ["CC"] = "clang-4.0"
+os.environ["CXX"] = "clang++-4.0"
+os.environ["CFLAGS"] = "-Wno-invalid-partial-specialization"
+os.environ["LDFLAGS"] =  "-Wl,--no-as-needed"
 
 from distutils.core import setup
 from distutils.extension import Extension

@@ -45,7 +45,6 @@ using namespace eos::chain;
 using namespace boost::python;
 
 void hack_() {
-
 }
 
 std::string eoshelper_Transfer(const std::string& from, const std::string& to, long amount, const std::string& memo) {
@@ -59,18 +58,22 @@ std::string eoshelper_Transfer(const std::string& from, const std::string& to, l
   return fc::to_hex(fc::raw::pack(transfer));
 }
 
-std::string eoshelper_SetMessageHandler(const std::string& processor, const std::string& recipient, const std::string& type, const std::string& validate, const std::string& precondition, const std::string& apply) {
+std::string eoshelper_SetCode(const std::string& account, int vmtype, int vmversion, boost::python::object py_buffer ) {
 
-  eos::types::SetMessageHandler set_message_handler;
+  eos::types::SetCode set_code;
   
-  set_message_handler.processor    = processor;
-  set_message_handler.recipient    = recipient;
-  set_message_handler.type         = type; 
-  set_message_handler.validate     = validate; 
-  set_message_handler.precondition = precondition;
-  set_message_handler.apply        = apply;
+  set_code.account   = account;
+  set_code.vmtype    = vmtype;
+  set_code.vmversion = vmversion;
 
-  return fc::to_hex(fc::raw::pack(set_message_handler));
+  boost::python::object locals(python::borrowed(PyEval_GetLocals()));
+  boost::python::object py_iter = locals["__builtins__"].attr("iter");
+  boost::python::stl_input_iterator<char> begin( py_iter(py_buffer)), end;
+
+  // Copy the py_buffer into a local buffer with known continguous memory.
+  set_code.code = eos::types::Bytes(begin, end);
+
+  return fc::to_hex(fc::raw::pack(set_code));
 }
 
 std::string eoshelper_DefineStruct(const std::string& scope, const std::string& struct_name, const std::string& struct_base, const boost::python::list& fields) {
@@ -164,6 +167,7 @@ void translate(fc::exception const& e)
 BOOST_PYTHON_MODULE(eoshelper)
 {
   register_exception_translator<fc::exception>(&translate);
+
   def("eoshelper_priv_to_pubkey",     eoshelper_priv_to_pubkey);
   def("eoshelper_tapos_info",         eoshelper_tapos_info);
   def("eoshelper_tx_sign",            eoshelper_tx_sign);
@@ -172,5 +176,5 @@ BOOST_PYTHON_MODULE(eoshelper)
   def("eoshelper_sign_compact",       eoshelper_sign_compact);
   def("eoshelper_Transfer",           eoshelper_Transfer);
   def("eoshelper_DefineStruct",       eoshelper_DefineStruct);
-  def("eoshelper_SetMessageHandler",  eoshelper_SetMessageHandler);
+  def("eoshelper_SetCode",            eoshelper_SetCode);
 }
