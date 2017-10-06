@@ -33,21 +33,13 @@ static cl::opt<bool> ABIVerbose(
     cl::cat(AbiGeneratorCategory));
 
 int main(int argc, const char **argv) {
+   CommonOptionsParser op(argc, argv, AbiGeneratorCategory);
+   ClangTool Tool(op.getCompilations(), op.getSourcePathList());
 
+   int result = Tool.run(createFactory(ABIVerbose, ABIContext).get());
 
-  // runToolOnCode returns whether the action was correctly run over the
-  // given code.
-  //auto x = runToolOnCode(new GenerateAbiAction(true,"pete"), "class X {};");
-
-    CommonOptionsParser op(argc, argv, AbiGeneratorCategory);
-    ClangTool Tool(op.getCompilations(), op.getSourcePathList());
-
-    int result = Tool.run(createFactory(ABIVerbose, ABIContext).get());
-
-    auto& abigen = AbiGenerator::get();
-
-    auto s = fc::json::to_string<eos::types::Abi>(abigen.abi);
-    cout << s << endl;
-
-    return result;
+   // auto& abigen = AbiGenerator::get();
+   // auto s = fc::json::to_string<eos::types::Abi>(abigen.abi);
+   // cout << s << endl;
+   return result;
 }
