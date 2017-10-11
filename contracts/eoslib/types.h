@@ -16,6 +16,9 @@ typedef long                 int32_t;
 typedef unsigned __int128    uint128_t;
 typedef __int128             int128_t;
 typedef unsigned char        uint8_t;
+typedef unsigned short       uint16_t;
+typedef char                 int8_t;
+typedef short                int16_t;
 
 typedef uint64_t AccountName;
 typedef uint64_t PermissionName;

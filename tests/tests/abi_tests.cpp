@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <vector>
 #include <iterator>
+#include <cstdlib>
 
 #include <boost/test/unit_test.hpp>
 
@@ -217,35 +218,116 @@ BOOST_FIXTURE_TEST_CASE(generator, testing_fixture)
 
   auto is_assert_exception =[](const fc::assert_exception& e) -> bool { return true; };
 
-  auto generate_abi = [](const char* source, const char* context, const char* abi) -> bool {
-    runToolOnCodeWithArgs(new GenerateAbiAction(false, context), source, {"-fparse-all-comments"} );
+  auto generate_abi = [this](const char* source, const char* context, const char* abi) -> bool {
+    
+    const char* eoslib_path = std::getenv("EOSLIB");
+    FC_ASSERT(eoslib_path != NULL);
+
+    std::string include_param = std::string("-I") + eoslib_path;
+    //std::cout << "full include:" << include_param << std::endl; 
+
+    runToolOnCodeWithArgs(new GenerateAbiAction(false, context), source, {"-fparse-all-comments", include_param} );
     FC_ASSERT(AbiGenerator::get().error_found == false);
     
-    auto a1 = fc::json::from_string(abi);
-    auto a2 = AbiGenerator::get().abi;
+    auto abi1 = fc::json::from_string(abi).as<Abi>();
+    auto abi2 = AbiGenerator::get().abi;
 
-    return fc::to_hex(fc::raw::pack(a1)) == fc::to_hex(fc::raw::pack(a2));
+    std::cout << "ABI1: " <<  std::endl << fc::json::to_string(abi1) << std::endl << std::endl; 
+    std::cout << "ABI2: " <<  std::endl << fc::json::to_string(abi2) << std::endl << std::endl; 
+    
+    return fc::to_hex(fc::raw::pack(abi1)) == fc::to_hex(fc::raw::pack(abi2));
   };
 
    const char* unknown_type = R"=====(
+   #include <eoslib/types.h>
    //@abi ctx action
    struct Transfer {
-      unsigned long long param1;
-      char*              param2;
+      uint64_t param1;
+      char*    param2;
    };
    )=====";
 
    BOOST_CHECK_EXCEPTION( generate_abi(unknown_type, "ctx", ""), fc::assert_exception, is_assert_exception );
    
    const char* all_types = R"=====(
+   #include <eoslib/types.h>
+    
+    typedef int String; 
+    typedef int Signature;
+    typedef int Checksum;
+    typedef int FieldName;
+    typedef int FixedString32;
+    typedef int FixedString16;
+    typedef int TypeName;
+    typedef int Bytes;
+    typedef uint8_t UInt8;
+    typedef uint16_t UInt16;
+    typedef uint32_t UInt32;
+    typedef uint64_t UInt64;
+    typedef uint128_t UInt128;
+    //typedef uint256 UInt256;
+    typedef int8_t Int8;
+    typedef int16_t Int16;
+    typedef int32_t Int32;
+    typedef int64_t Int64;
+    typedef uint64_t Name;
+    typedef int Field;
+    typedef int Struct;
+    typedef int Fields;
+    typedef int MessageName;
+    typedef int AccountPermission;
+    typedef int Message;
+    typedef int AccountPermissionWeight;
+    typedef int Transaction;
+    typedef int SignedTransaction;
+    typedef int KeyPermissionWeight;
+    typedef int Authority;
+    typedef int BlockchainConfiguration;
+    typedef int TypeDef;
+    typedef int Action;
+    typedef int Table;
+    typedef int Abi;
+   
    //@abi ctx action
-   struct Transfer {
-      long long            param1;
-      unsigned long long   param2;
-      unsigned long        param3;
-      long                 param4;
-      unsigned __int128    param5;
-      unsigned char        param7;
+   struct TestStruct {
+      String                  field1;
+      Time                    field2;
+      Signature               field3;
+      Checksum                field4;
+      FieldName               field5;
+      FixedString32           field6;
+      FixedString16           field7;
+      TypeName                field8;
+      Bytes                   field9;
+      UInt8                   field10;
+      UInt16                  field11;
+      UInt32                  field12;
+      UInt64                  field13;
+      UInt128                 field14;
+      Int8                    field16;
+      Int16                   field17;
+      Int32                   field18;
+      Int64                   field19;
+      Name                    field20;
+      Field                   field21;
+      Struct                  field22;
+      Fields                  field23;
+      AccountName             field24;
+      PermissionName          field25;
+      FuncName                field26;
+      MessageName             field27;
+      AccountPermission       field28;
+      Message                 field29;
+      AccountPermissionWeight field30;
+      Transaction             field31;
+      SignedTransaction       field32;
+      KeyPermissionWeight     field33;
+      Authority               field34;
+      BlockchainConfiguration field35;
+      TypeDef                 field36;
+      Action                  field37;
+      Table                   field38;
+      Abi                     field39;
    };
    )=====";
 
@@ -253,26 +335,181 @@ BOOST_FIXTURE_TEST_CASE(generator, testing_fixture)
    {
        "types": [],
        "structs": [{
-          name : "Transfer",
-          base : "",
-          fields : {
-            "Int64"   : "param1",
-            "UInt64"  : "param2",
-            "UInt32"  : "param3",
-            "Int32"   : "param4",
-            "UInt128" : "param5",
-            "Int128"  : "param6",
-            "UInt8"   : "param7"
+          "name" : "TestStruct",
+          "base" : "",
+          "fields" : {
+            "field1" : "String",
+            "field2" : "Time",
+            "field3" : "Signature",
+            "field4" : "Checksum",
+            "field5" : "FieldName",
+            "field6" : "FixedString32",
+            "field7" : "FixedString16",
+            "field8" : "TypeName",
+            "field9" : "Bytes",
+            "field10" : "UInt8",
+            "field11" : "UInt16",
+            "field12" : "UInt32",
+            "field13" : "UInt64",
+            "field14" : "UInt128",
+            "field16" : "Int8",
+            "field17" : "Int16",
+            "field18" : "Int32",
+            "field19" : "Int64",
+            "field20" : "Name",
+            "field21" : "Field",
+            "field22" : "Struct",
+            "field23" : "Fields",
+            "field24" : "AccountName",
+            "field25" : "PermissionName",
+            "field26" : "FuncName",
+            "field27" : "MessageName",
+            "field28" : "AccountPermission",
+            "field29" : "Message",
+            "field30" : "AccountPermissionWeight",
+            "field31" : "Transaction",
+            "field32" : "SignedTransaction",
+            "field33" : "KeyPermissionWeight",
+            "field34" : "Authority",
+            "field35" : "BlockchainConfiguration",
+            "field36" : "TypeDef",
+            "field37" : "Action",
+            "field38" : "Table",
+            "field39" : "Abi"
           }
        }],
        "actions": [{
-          "name" : "transfer",
-          "type" : "Transfer 
+          "action" : "teststruct",
+          "type" : "TestStruct"
        }],
        "tables": []
    }
    )=====";
-  //BOOST_CHECK_EQUAL( generate_abi(all_types, "ctx", all_types_abi), true );
+  BOOST_CHECK_EQUAL( generate_abi(all_types, "ctx", all_types_abi), true );
+
+   const char* double_base = R"=====(
+   #include <eoslib/types.h>
+
+   struct A {
+      uint64_t param3;
+   };
+   struct B {
+      uint64_t param2;
+   };
+   
+   //@abi ctx action
+   struct C : A,B {
+      uint64_t param1;
+   };
+   )=====";
+
+   BOOST_CHECK_EXCEPTION( generate_abi(double_base, "ctx", ""), fc::assert_exception, is_assert_exception );
+
+   const char* double_action = R"=====(
+   #include <eoslib/types.h>
+
+   struct A {
+      uint64_t param3;
+   };
+   struct B : A {
+      uint64_t param2;
+   };
+   
+   //@abi ctx action action1 action2
+   struct C : B {
+      uint64_t param1;
+   };
+   )=====";
+
+   const char* double_action_abi = R"=====(
+   {
+       "types": [],
+       "structs": [{
+          "name" : "A",
+          "base" : "",
+          "fields" : {
+            "param3" : "UInt64",
+          }
+       },{
+          "name" : "B",
+          "base" : "A",
+          "fields" : {
+            "param2" : "UInt64",
+          }
+       },{
+          "name" : "C",
+          "base" : "B",
+          "fields" : {
+            "param1" : "UInt64",
+          }
+       }],
+       "actions": [{
+          "action" : "action1",
+          "type" : "C"
+       },{
+          "action" : "action2",
+          "type" : "C"
+       }],
+       "tables": []
+   }
+   )=====";
+
+
+   BOOST_CHECK_EQUAL( generate_abi(double_action, "ctx", double_action_abi), true );
+
+   const char* all_indexes = R"=====(
+   #include <eoslib/types.h>
+   
+   typedef int String;
+
+   //@abi ctx table
+   struct Ti64 {
+      uint64_t field1;
+   };
+
+   //@abi ctx table
+   struct Ti128i128 {
+      uint128_t field1;
+      uint128_t field2;
+   };
+
+   //@abi ctx table
+   struct Ti64i64i64 {
+      uint64_t field1;
+      uint64_t field2;
+      uint64_t field3;
+   };
+
+   struct MyComplexValue {
+      uint64_t    a;
+      AccountName b;
+   };
+
+   //@abi ctx table
+   struct Tstr {
+      String key;
+      MyComplexValue value;
+   };
+
+   )=====";
+
+   const char* all_indexes_abi = R"=====(
+   {
+       "types": [],
+       "structs": [],
+       "actions": [],
+       "tables": [{
+        
+       }]
+   }
+   )=====";
+
+   BOOST_CHECK_EQUAL( generate_abi(all_indexes, "ctx", all_indexes_abi), true );
+
+   //fieldname size
+   //fieldtype size exceded
+   //different namespace same struct
+
 
 } FC_LOG_AND_RETHROW() }
 
