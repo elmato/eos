@@ -25,6 +25,8 @@
 #include <fstream>
 #include <string.h>
 
+#include <secp256k1_field.h>
+
 namespace eosio { namespace chain {
    using namespace webassembly;
    using namespace webassembly::common;
@@ -1696,6 +1698,75 @@ class call_depth_api : public context_aware_api {
          FC_THROW_EXCEPTION(wasm_execution_error, "Exceeded call depth maximum");
       }
 };
+
+class secp256k1_api : public context_aware_api {
+   public:
+      secp256k1_api( apply_context& ctx )
+      :context_aware_api(ctx, true) {}
+   
+      void secp256k1_fe_normalize_weak(secp256k1_fe& r) {
+         ::secp256k1_fe_normalize_weak(&r);
+      }
+
+      void secp256k1_fe_normalize_var(secp256k1_fe& r) {
+         ::secp256k1_fe_normalize_var(&r);
+      }
+
+      int secp256k1_fe_normalizes_to_zero_var(secp256k1_fe& r) {
+         return ::secp256k1_fe_normalizes_to_zero_var(&r);
+      }
+
+      int secp256k1_fe_set_b32(secp256k1_fe& r, const fc::sha256& a) {
+         return ::secp256k1_fe_set_b32(&r, (const unsigned char *)&a);
+      }
+
+      void secp256k1_fe_get_b32(fc::sha256& r, const secp256k1_fe& a) {
+         return ::secp256k1_fe_get_b32((unsigned char *)&r, &a);
+      }
+
+      void secp256k1_fe_negate(secp256k1_fe& r, const secp256k1_fe& a, int m) {
+         ::secp256k1_fe_negate(&r, &a, m);
+      }
+
+      void secp256k1_fe_add(secp256k1_fe& r, const secp256k1_fe& a) {
+         ::secp256k1_fe_add(&r, &a);
+      }
+
+      void secp256k1_fe_mul(secp256k1_fe& r, const secp256k1_fe& a, const secp256k1_fe& b) {
+         ::secp256k1_fe_mul(&r, &a, &b);
+      }
+
+      void secp256k1_fe_sqr(secp256k1_fe& r, const secp256k1_fe& a) {
+         ::secp256k1_fe_sqr(&r, &a);
+      }
+
+      int secp256k1_fe_sqrt(secp256k1_fe& r, const secp256k1_fe& a) {
+         return ::secp256k1_fe_sqrt(&r, &a);
+      }
+
+      int secp256k1_fe_is_quad_var(const secp256k1_fe& a) {
+         return ::secp256k1_fe_is_quad_var(&a);
+      }
+
+      void secp256k1_fe_inv_var(secp256k1_fe& r, const secp256k1_fe& a) {
+         ::secp256k1_fe_inv_var(&r, &a);
+      }
+};
+
+REGISTER_INTRINSICS(secp256k1_api,
+      (secp256k1_fe_normalize_weak,          void(int) )
+      (secp256k1_fe_normalize_var,           void(int) )              
+      (secp256k1_fe_normalizes_to_zero_var,  int(int) )                       
+      (secp256k1_fe_set_b32,                 int(int, int) )        
+      (secp256k1_fe_get_b32,                 void(int, int) )        
+      (secp256k1_fe_negate,                  void(int, int, int) )       
+      (secp256k1_fe_add,                     void(int, int) )    
+      (secp256k1_fe_mul,                     void(int, int, int) )    
+      (secp256k1_fe_sqr,                     void(int, int) )    
+      (secp256k1_fe_sqrt,                    int(int, int) )     
+      (secp256k1_fe_is_quad_var,             int(int) )            
+      (secp256k1_fe_inv_var,                 void(int, int) )        
+);
 
 REGISTER_INJECTED_INTRINSICS(call_depth_api,
    (call_depth_assert,  void()               )

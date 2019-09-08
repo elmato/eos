@@ -175,7 +175,19 @@ const std::vector<const char*> genesis_intrinsics = {
    "memcpy",
    "memmove",
    "memcmp",
-   "memset"
+   "memset",
+   "secp256k1_fe_normalize_weak",
+   "secp256k1_fe_normalize_var",
+   "secp256k1_fe_normalizes_to_zero_var",
+   "secp256k1_fe_set_b32",
+   "secp256k1_fe_get_b32",
+   "secp256k1_fe_negate",
+   "secp256k1_fe_add",
+   "secp256k1_fe_mul",
+   "secp256k1_fe_sqr",
+   "secp256k1_fe_sqrt",
+   "secp256k1_fe_is_quad_var",
+   "secp256k1_fe_inv_var"
 };
 
 } } // namespace eosio::chain
