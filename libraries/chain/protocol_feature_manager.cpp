@@ -157,6 +157,29 @@ either the account authorized the action or the action's net effect on RAM usage
 */
             {}
          } )
+         (  builtin_protocol_feature_t::elliptic_curve_operations, builtin_protocol_feature_spec{
+            "ELLIPTIC_CURVE_OPERATIONS",
+            fc::variant("78561ed130d24b4834fa9e79713fb8de7daf32e266437c363b68665ac6de8ae3").as<digest_type>(),
+            // SHA256 hash of the raw message below within the comment delimiters (do not modify message below).
+/*
+Builtin protocol feature: ELLIPTIC_CURVE_OPERATIONS
+
+Adds new intrinsics to enable contracts to do operations on elliptic curves.
+After this feature is activated, operations on the Ristretto group will be available for contracts.
+*/
+            {}
+         } )
+         (  builtin_protocol_feature_t::arbitrary_length_integer_modular_arithmetic, builtin_protocol_feature_spec{
+            "ARBITRARY_LENGTH_INTEGER_MODULAR_ARITHMETIC",
+            fc::variant("0ff2549a5f69f24c0b5530538e4d88d66d425978f4534ee6dfa7a70dd794c273").as<digest_type>(),
+            // SHA256 hash of the raw message below within the comment delimiters (do not modify message below).
+/*
+Builtin protocol feature: ARBITRARY_LENGTH_INTEGER_MODULAR_ARITHMETIC
+
+Adds new intrinsics to enable contracts to perform modular arithmetic operations using arbitrary lenght integers.
+*/
+            {}
+         } )
    ;
 
 

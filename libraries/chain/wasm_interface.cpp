@@ -25,6 +25,9 @@
 #include <fstream>
 #include <string.h>
 
+#include <sodium.h>
+#include <NTL/ZZ.h>
+
 namespace eosio { namespace chain {
    using namespace webassembly;
    using namespace webassembly::common;
@@ -797,6 +800,223 @@ class crypto_api : public context_aware_api {
 
       void ripemd160(array_ptr<char> data, size_t datalen, fc::ripemd160& hash_val) {
          hash_val = encode<fc::ripemd160::encoder>( data, datalen );
+      }
+
+      void ec_add(int curve_id, array_ptr<unsigned char> res, size_t res_size,
+                 array_ptr<const unsigned char> point_a, size_t point_a_size,
+                 array_ptr<const unsigned char> point_b, size_t point_b_size ) {
+
+         EOS_ASSERT( curve_id == 1, crypto_api_exception,
+                        "elliptic curve not supported" );
+
+         EOS_ASSERT( res_size == crypto_core_ristretto255_BYTES,
+                        crypto_api_exception, "invalid result size");
+
+         EOS_ASSERT( point_a_size == crypto_core_ristretto255_BYTES,
+                        crypto_api_exception, "invalid point_a size");
+
+         EOS_ASSERT( point_b_size == crypto_core_ristretto255_BYTES,
+                        crypto_api_exception, "invalid point_b size");
+
+         EOS_ASSERT( !crypto_core_ristretto255_add(res, point_a, point_b),
+                        crypto_api_exception, "add failed");
+      }
+      
+      void ec_mul(int curve_id, array_ptr<unsigned char> res, size_t res_size,
+                 array_ptr<const unsigned char> scalar, size_t scalar_size, 
+                 array_ptr<const unsigned char> point, size_t point_size ) {
+
+         EOS_ASSERT( curve_id == 1, crypto_api_exception,
+                        "elliptic curve not supported" );
+
+         EOS_ASSERT( point_size == crypto_core_ristretto255_BYTES,
+                        crypto_api_exception, "invalid point size");
+
+         EOS_ASSERT( res_size == crypto_core_ristretto255_BYTES,
+                        crypto_api_exception, "invalid result size");
+
+         EOS_ASSERT( scalar_size == crypto_core_ristretto255_SCALARBYTES,
+                       crypto_api_exception, "invalid scalar size"); 
+
+         EOS_ASSERT( !crypto_scalarmult_ristretto255(res, scalar, point),
+                       crypto_api_exception, "scalarmult failed");
+      }
+
+      void ec_mexp(int curve_id, array_ptr<unsigned char> res, size_t res_size,
+                 array_ptr<const unsigned char> scalars, size_t scalars_size, 
+                 array_ptr<const unsigned char> points, size_t points_size ) {
+         
+         EOS_ASSERT( curve_id == 1, crypto_api_exception,
+                       "elliptic curve not supported" );
+
+         EOS_ASSERT( res_size == crypto_core_ristretto255_BYTES,
+                       crypto_api_exception, "invalid result size");
+
+         EOS_ASSERT( scalars_size && !(scalars_size % crypto_core_ristretto255_SCALARBYTES),
+                       crypto_api_exception, "invalid scalars size");
+
+         EOS_ASSERT( points_size && !(points_size % crypto_core_ristretto255_BYTES),
+                       crypto_api_exception, "invalid points size");
+
+         EOS_ASSERT( points_size/crypto_core_ristretto255_BYTES == scalars_size/crypto_core_ristretto255_SCALARBYTES,
+                       crypto_api_exception, "number of points != number of scalars");
+         
+         unsigned char tmp[crypto_core_ristretto255_BYTES];
+         const unsigned char* ppoints = points;
+         const unsigned char* pscalars = scalars;
+         for(int i=0; i<points_size/crypto_core_ristretto255_BYTES; i++) {
+            if( i==0 ) {
+                  EOS_ASSERT( !crypto_scalarmult_ristretto255(res, pscalars, ppoints),
+                                  crypto_api_exception, "scalarmult failed");
+                  continue;
+            }
+
+            EOS_ASSERT( !crypto_scalarmult_ristretto255(tmp,
+                  pscalars+i*crypto_core_ristretto255_SCALARBYTES,
+                  ppoints+i*crypto_core_ristretto255_BYTES
+            ), crypto_api_exception, "scalarmult failed");
+
+            EOS_ASSERT( !crypto_core_ristretto255_add(res, res, tmp),
+               crypto_api_exception, "add failed");
+         }
+      }
+
+      void zp_add(array_ptr<unsigned char> res, size_t res_size,
+              array_ptr<const unsigned char> a, size_t a_size,
+              array_ptr<const unsigned char> b, size_t b_size,
+              array_ptr<const unsigned char> n, size_t n_size ) {
+
+         EOS_ASSERT( res_size == a_size && a_size == b_size && b_size == n_size && n_size > 0,
+            crypto_api_exception, "invalid integer size");
+
+         try {
+            auto ZZa = NTL::ZZFromBytes(a, a_size);
+            auto ZZb = NTL::ZZFromBytes(b, b_size);
+            auto ZZn = NTL::ZZFromBytes(n, n_size);
+
+            NTL::ZZ ZZr;
+            AddMod(ZZr, ZZa, ZZb, ZZn);
+
+            NTL::BytesFromZZ(res, ZZr, res_size);
+         } catch(...) {
+            EOS_ASSERT( false, crypto_api_exception, "add failed");
+         }
+      }
+
+      void zp_sub(array_ptr<unsigned char> res, size_t res_size,
+              array_ptr<const unsigned char> a, size_t a_size,
+              array_ptr<const unsigned char> b, size_t b_size,
+              array_ptr<const unsigned char> n, size_t n_size ) {
+
+         EOS_ASSERT( res_size == a_size && a_size == b_size && b_size == n_size && n_size > 0,
+            crypto_api_exception, "invalid integer size");
+
+         try {
+            auto ZZa = NTL::ZZFromBytes(a, a_size);
+            auto ZZb = NTL::ZZFromBytes(b, b_size);
+            auto ZZn = NTL::ZZFromBytes(n, n_size);
+
+            NTL::ZZ ZZr;
+            SubMod(ZZr, ZZa, ZZb, ZZn);
+
+            NTL::BytesFromZZ(res, ZZr, res_size);
+         } catch(...) {
+            EOS_ASSERT( false, crypto_api_exception, "add failed");
+         }
+      }
+
+      void zp_mul(array_ptr<unsigned char> res, size_t res_size,
+              array_ptr<const unsigned char> a, size_t a_size,
+              array_ptr<const unsigned char> b, size_t b_size,
+              array_ptr<const unsigned char> n, size_t n_size ) {
+
+         EOS_ASSERT( res_size == a_size && a_size == b_size && b_size == n_size && n_size > 0,
+            crypto_api_exception, "invalid integer size");
+
+         try {
+            auto ZZa = NTL::ZZFromBytes(a, a_size);
+            auto ZZb = NTL::ZZFromBytes(b, b_size);
+            auto ZZn = NTL::ZZFromBytes(n, n_size);
+
+            NTL::ZZ ZZr;
+            MulMod(ZZr, ZZa, ZZb, ZZn);
+
+            NTL::BytesFromZZ(res, ZZr, res_size);
+         } catch(...) {
+            EOS_ASSERT( false, crypto_api_exception, "mul failed");
+         }
+      }
+
+      void zp_pow(array_ptr<unsigned char> res, size_t res_size,
+              array_ptr<const unsigned char> a, size_t a_size,
+              array_ptr<const unsigned char> b, size_t b_size,
+              array_ptr<const unsigned char> n, size_t n_size ) {
+
+         EOS_ASSERT( res_size == a_size && a_size == b_size && b_size == n_size && n_size > 0,
+            crypto_api_exception, "invalid integer size");
+
+         try {
+            auto ZZa = NTL::ZZFromBytes(a, a_size);
+            auto ZZb = NTL::ZZFromBytes(b, b_size);
+            auto ZZn = NTL::ZZFromBytes(n, n_size);
+
+            NTL::ZZ ZZr;
+            PowerMod(ZZr, ZZa, ZZb, ZZn);
+
+            NTL::BytesFromZZ(res, ZZr, res_size);
+         } catch(...) {
+            EOS_ASSERT( false, crypto_api_exception, "pow failed");
+         }
+      }
+
+      int zp_sqrt(array_ptr<unsigned char> res, size_t res_size,
+              array_ptr<const unsigned char> a, size_t a_size,
+              array_ptr<const unsigned char> n, size_t n_size ) {
+
+         EOS_ASSERT( res_size == a_size && a_size == n_size && n_size > 0,
+            crypto_api_exception, "invalid integer size");
+
+         int is_square = 1;
+         try {
+            auto ZZa = NTL::ZZFromBytes(a, a_size);
+            auto ZZn = NTL::ZZFromBytes(n, n_size);
+
+            NTL::ZZ ZZr;
+            SqrRootMod(ZZr, ZZa, ZZn);
+
+            NTL::BytesFromZZ(res, ZZr, res_size);
+         } catch(const NTL::InvModErrorObject& e ) {
+            is_square = 0;
+         } catch(...) {
+            EOS_ASSERT( false, crypto_api_exception, "sqrt failed");
+         }
+      
+         return is_square;
+      }
+
+      int zp_inv(array_ptr<unsigned char> res, size_t res_size,
+              array_ptr<const unsigned char> a, size_t a_size,
+              array_ptr<const unsigned char> n, size_t n_size ) {
+
+         EOS_ASSERT( res_size == a_size && a_size == n_size && n_size > 0,
+            crypto_api_exception, "invalid integer size");
+
+         int has_inv = 1;
+         try {
+            auto ZZa = NTL::ZZFromBytes(a, a_size);
+            auto ZZn = NTL::ZZFromBytes(n, n_size);
+
+            NTL::ZZ ZZr;
+            InvMod(ZZr, ZZa, ZZn);
+
+            NTL::BytesFromZZ(res, ZZr, res_size);
+         } catch(const NTL::InvModErrorObject& e ) {
+            has_inv = 0;
+         } catch(...) {
+            EOS_ASSERT( false, crypto_api_exception, "inv failed");
+         }
+         
+         return has_inv;
       }
 };
 
@@ -1822,6 +2042,15 @@ REGISTER_INTRINSICS(crypto_api,
    (sha256,                 void(int, int, int)           )
    (sha512,                 void(int, int, int)           )
    (ripemd160,              void(int, int, int)           )
+   (ec_add,                 void(int, int, int, int, int, int, int ))
+   (ec_mul,                 void(int, int, int, int, int, int, int ))
+   (ec_mexp,                void(int, int, int, int, int, int, int ))
+   (zp_add,                 void(int, int, int, int, int, int, int, int ))
+   (zp_sub,                 void(int, int, int, int, int, int, int, int ))
+   (zp_mul,                 void(int, int, int, int, int, int, int, int ))
+   (zp_pow,                 void(int, int, int, int, int, int, int, int ))
+   (zp_sqrt,                int(int, int, int, int, int, int ))
+   (zp_inv,                 int(int, int, int, int, int, int ))
 );
 
 

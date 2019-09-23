@@ -312,6 +312,8 @@ struct controller_impl {
       set_activation_handler<builtin_protocol_feature_t::preactivate_feature>();
       set_activation_handler<builtin_protocol_feature_t::replace_deferred>();
       set_activation_handler<builtin_protocol_feature_t::get_sender>();
+      set_activation_handler<builtin_protocol_feature_t::elliptic_curve_operations>();
+      set_activation_handler<builtin_protocol_feature_t::arbitrary_length_integer_modular_arithmetic>();
 
       self.irreversible_block.connect([this](const block_state_ptr& bsp) {
          wasmif.current_lib(bsp->block_num);
@@ -3078,6 +3080,24 @@ void controller_impl::on_activation<builtin_protocol_feature_t::replace_deferred
       resource_limits.add_pending_ram_usage( itr->name, ram_delta );
       db.remove( *itr );
    }
+}
+
+template<>
+void controller_impl::on_activation<builtin_protocol_feature_t::elliptic_curve_operations>() {
+   db.modify( db.get<protocol_state_object>(), [&]( auto& ps ) {
+      for(auto& i : {"ec_add", "ec_mul", "ec_mexp"}) {
+         add_intrinsic_to_whitelist( ps.whitelisted_intrinsics, i );
+      }
+   } );
+}
+
+template<>
+void controller_impl::on_activation<builtin_protocol_feature_t::arbitrary_length_integer_modular_arithmetic>() {
+   db.modify( db.get<protocol_state_object>(), [&]( auto& ps ) {
+      for(auto& i : {"zp_add", "zp_sub", "zp_mul", "zp_pow", "zp_sqrt", "zp_inv"}) {
+         add_intrinsic_to_whitelist( ps.whitelisted_intrinsics, i );
+      }
+   } );
 }
 
 /// End of protocol feature activation handlers

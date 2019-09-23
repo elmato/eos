@@ -51,7 +51,7 @@ apply_context::apply_context(controller& con, transaction_context& trx_ctx, uint
 
 void apply_context::exec_one()
 {
-   auto start = fc::time_point::now();
+   _start = fc::time_point::now();
 
    action_receipt r;
    r.receiver         = receiver;
@@ -115,7 +115,7 @@ void apply_context::exec_one()
       action_trace& trace = trx_context.get_action_trace( action_ordinal );
       trace.error_code = controller::convert_exception_to_error_code( e );
       trace.except = e;
-      finalize_trace( trace, start );
+      finalize_trace( trace, _start );
       throw;
    }
 
@@ -146,7 +146,7 @@ void apply_context::exec_one()
 
    trx_context.executed.emplace_back( std::move(r) );
 
-   finalize_trace( trace, start );
+   finalize_trace( trace, _start );
 
    if ( control.contracts_console() ) {
       print_debug(receiver, trace);

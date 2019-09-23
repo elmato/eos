@@ -506,6 +506,9 @@ class apply_context {
    public:
 
       void console_append( const string& val ) {
+         auto ts = fc::time_point::now() - _start;
+         std::ostringstream s; s << "[" << ts.count() << "]: ";
+         _pending_console_output += s.str();
          _pending_console_output += val;
       }
 
@@ -572,7 +575,7 @@ class apply_context {
       uint32_t                      action_ordinal = 0;
       bool                          privileged   = false;
       bool                          context_free = false;
-
+      fc::time_point                _start;
    public:
       generic_index<index64_object>                                  idx64;
       generic_index<index128_object>                                 idx128;
