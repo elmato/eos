@@ -449,7 +449,7 @@ class apply_context {
    /// Constructor
    public:
       apply_context(controller& con, transaction_context& trx_ctx, uint32_t action_ordinal, uint32_t depth=0);
-
+      std::chrono::time_point<std::chrono::high_resolution_clock> last;
    /// Execution methods:
    public:
 
@@ -502,7 +502,13 @@ class apply_context {
    public:
 
       void console_append( const string& val ) {
+         auto now = std::chrono::high_resolution_clock::now();
+         
          _pending_console_output += val;
+
+         auto d = std::chrono::duration_cast<std::chrono::nanoseconds>(now-last).count();
+         ilog("[${msg}]: ${d}",("msg",val)("d",d));
+         last = std::chrono::high_resolution_clock::now();
       }
 
    /// Database methods:

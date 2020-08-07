@@ -47,6 +47,7 @@ apply_context::apply_context(controller& con, transaction_context& trx_ctx, uint
    act = &trace.act;
    receiver = trace.receiver;
    context_free = trace.context_free;
+   last = std::chrono::high_resolution_clock::now();
 }
 
 void apply_context::exec_one()
